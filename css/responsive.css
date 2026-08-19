@@ -1,0 +1,22 @@
+/* Layar HP sangat kecil */
+@media (max-width: 360px) {
+    .couple-name { font-size: 2.5rem; }
+    .hero-text h1 { font-size: 2.6rem; }
+    .countdown-box { min-width: 58px; padding: 14px 6px; }
+    .countdown-box span { font-size: 1.5rem; }
+}
+
+/* Kunci tampilan selalu seukuran HP, walau dibuka di layar lebar (tablet/desktop).
+   Lebar #preloader, #cover-screen, dan .mobile-wrapper sudah dikunci lewat
+   max-width: 450px di style.css, jadi di sini cukup atur warna latar di luar
+   "layar HP" supaya terlihat seperti bingkai. */
+@media (min-width: 481px) {
+    body {
+        background-color: #ded6c8;
+    }
+
+    #preloader,
+    .mobile-wrapper {
+        box-shadow: 0 0 60px rgba(0, 0, 0, 0.25);
+    }
+}
