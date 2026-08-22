@@ -32,9 +32,96 @@ document.getElementById('btn-open-invitation').addEventListener('click', functio
     initScrollReveal();
 
     setTimeout(() => cover.classList.add('hidden'), 900);
-});
 
-// ================= Toast =================
+    // Auto-scroll halus dari Beranda melewati semua section, berhenti di Gift
+    setTimeout(() => {
+        const giftSection = document.getElementById('gift');
+        if (giftSection) {
+            const AUTO_SCROLL_DURATION = 90000; // ms — ubah angka ini untuk atur kecepatan (makin besar makin lambat)
+            const targetY = giftSection.getBoundingClientRect().top + window.scrollY;
+            smoothScrollTo(targetY, AUTO_SCROLL_DURATION);
+        }
+    }, 300);
+}, { once: true });
+
+// ================= Smooth Scroll dengan Durasi Bisa Diatur =================
+let cancelActiveAutoScroll = null;
+
+function smoothScrollTo(targetY, duration) {
+    // Batalkan dulu animasi auto-scroll sebelumnya kalau masih berjalan,
+    // supaya tidak ada dua animasi berebut posisi scroll (penyebab efek "bergetar")
+    if (cancelActiveAutoScroll) {
+        cancelActiveAutoScroll();
+    }
+
+    const startY = window.scrollY;
+    const distance = targetY - startY;
+    const startTime = performance.now();
+    let cancelled = false;
+
+    function cancelAutoScroll() {
+        cancelled = true;
+        removeCancelListeners();
+        setAutoScrollingClass(false);
+        if (cancelActiveAutoScroll === cancelAutoScroll) {
+            cancelActiveAutoScroll = null;
+        }
+    }
+
+    cancelActiveAutoScroll = cancelAutoScroll;
+
+    function setAutoScrollingClass(isActive) {
+        const bottomBar = document.getElementById('bottomBar');
+        if (bottomBar) bottomBar.classList.toggle('auto-scrolling', isActive);
+    }
+
+    function addCancelListeners() {
+        window.addEventListener('wheel', cancelAutoScroll, { passive: true });
+        window.addEventListener('touchstart', cancelAutoScroll, { passive: true });
+        window.addEventListener('pointerdown', cancelAutoScroll, { passive: true });
+        window.addEventListener('keydown', cancelAutoScroll);
+    }
+
+    function removeCancelListeners() {
+        window.removeEventListener('wheel', cancelAutoScroll);
+        window.removeEventListener('touchstart', cancelAutoScroll);
+        window.removeEventListener('pointerdown', cancelAutoScroll);
+        window.removeEventListener('keydown', cancelAutoScroll);
+    }
+
+    function easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function step(currentTime) {
+        if (cancelled) return;
+
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // behavior: 'auto' WAJIB di sini, supaya tidak bentrok
+        // dengan CSS "scroll-behavior: smooth" pada html
+        window.scrollTo({
+            top: startY + distance * easeInOutQuad(progress),
+            left: 0,
+            behavior: 'auto'
+        });
+
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        } else {
+            removeCancelListeners();
+            setAutoScrollingClass(false);
+            if (cancelActiveAutoScroll === cancelAutoScroll) {
+                cancelActiveAutoScroll = null;
+            }
+        }
+    }
+
+    setAutoScrollingClass(true);
+    addCancelListeners();
+    requestAnimationFrame(step);
+}
 function showToast(message) {
     let toast = document.querySelector('.toast');
     if (!toast) {
@@ -158,7 +245,9 @@ initLightbox();
 
 // ================= Scroll Reveal =================
 function initScrollReveal() {
-    const revealEls = document.querySelectorAll('.section, .event-card, .bank-card, .card, .story-item');
+    const revealEls = document.querySelectorAll(
+        '.section, .event-card, .bank-card, .card, .story-item, .hero-photo, .countdown-container, .location-card, .gallery-grid figure'
+    );
     revealEls.forEach(el => el.classList.add('reveal'));
 
     const observer = new IntersectionObserver((entries) => {
