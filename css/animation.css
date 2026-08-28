@@ -8,6 +8,11 @@
     50% { transform: scale(1.05); opacity: 1; }
 }
 
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.15; }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

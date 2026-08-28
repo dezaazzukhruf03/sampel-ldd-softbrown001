@@ -93,6 +93,9 @@
             <a href="#gift" aria-label="Wedding Gift"><span class="nav-label">Gift</span><i class="fa-solid fa-gift"></i></a>
             <a href="#rsvp" aria-label="RSVP"><span class="nav-label">RSVP</span><i class="fa-solid fa-paper-plane"></i></a>
         </nav>
+        <button id="autoScrollToggle" class="autoscroll-toggle" aria-label="Aktifkan / matikan auto scroll">
+            <i class="fa-solid fa-arrow-down"></i>
+        </button>
         <button id="musicToggle" class="music-toggle" aria-label="Putar / jeda musik">
             <i class="fa-solid fa-music"></i>
         </button>
@@ -160,29 +163,20 @@
             <span class="section-eyebrow">Our Story</span>
             <h2>Kisah Kami</h2>
             <svg class="section-divider ornament"><use href="#ornament-sprig"></use></svg>
-            <div class="story-timeline">
-                <div class="story-item">
-                    <span class="story-dot"></span>
-                    <span class="story-year">2020</span>
-                    <h3>Pertama Bertemu</h3>
+            <div class="event-container story-grid">
+                <div class="event-card">
+                    <div class="event-icon"><i class="fa-solid fa-heart"></i></div>
+                    <h3>Awal Pertemuan</h3>
                     <p>Pertemuan yang tak disangka, menjadi awal dari kisah panjang yang kami jalani berdua.</p>
                 </div>
-                <div class="story-item">
-                    <span class="story-dot"></span>
-                    <span class="story-year">2022</span>
-                    <h3>Semakin Dekat</h3>
-                    <p>Waktu berjalan, rasa nyaman perlahan tumbuh menjadi kasih yang saling menguatkan.</p>
-                </div>
-                <div class="story-item">
-                    <span class="story-dot"></span>
-                    <span class="story-year">2025</span>
-                    <h3>Lamaran</h3>
+                <div class="event-card">
+                    <div class="event-icon"><i class="fa-solid fa-ring"></i></div>
+                    <h3>Mengikat Janji</h3>
                     <p>Sebuah janji terucap, menandai dimulainya babak baru menuju pernikahan.</p>
                 </div>
-                <div class="story-item">
-                    <span class="story-dot"></span>
-                    <span class="story-year">2026</span>
-                    <h3>Menuju Hari Bahagia</h3>
+                <div class="event-card">
+                    <div class="event-icon"><i class="fa-solid fa-champagne-glasses"></i></div>
+                    <h3>Menuju Pelaminan</h3>
                     <p>Dan kini, kami siap melangkah bersama menuju hari yang telah lama dinanti.</p>
                 </div>
             </div>
@@ -200,6 +194,21 @@
                     <p><i class="fa-regular fa-calendar-days"></i> Rabu, 31 Desember 2026</p>
                     <p><i class="fa-regular fa-clock"></i> 08.00 – 10.00 WIB</p>
                     <p><i class="fa-solid fa-location-dot"></i> SDN 39 Tanjung Saba</p>
+                    <div class="event-actions">
+                        <button type="button" class="event-btn calendar-btn"
+                            data-title="Akad Nikah - Sasuke &amp; Sakura"
+                            data-start="20261231T080000"
+                            data-end="20261231T100000"
+                            data-location="SDN 39 Tanjung Saba"
+                            data-desc="Akad Nikah Sasuke &amp; Sakura">
+                            <i class="fa-regular fa-calendar-plus"></i> Simpan Kalender
+                        </button>
+                        <a class="event-btn maps-btn"
+                            href="https://www.google.com/maps?q=-1.298710177856805,100.52943556499619"
+                            target="_blank" rel="noopener">
+                            <i class="fa-solid fa-location-dot"></i> Lihat Maps
+                        </a>
+                    </div>
                 </div>
                 <div class="event-card">
                     <div class="event-icon"><i class="fa-solid fa-champagne-glasses"></i></div>
@@ -207,6 +216,21 @@
                     <p><i class="fa-regular fa-calendar-days"></i> Rabu, 31 Desember 2026</p>
                     <p><i class="fa-regular fa-clock"></i> 11.00 – Selesai</p>
                     <p><i class="fa-solid fa-location-dot"></i> SDN 39 Tanjung Saba</p>
+                    <div class="event-actions">
+                        <button type="button" class="event-btn calendar-btn"
+                            data-title="Resepsi - Sasuke &amp; Sakura"
+                            data-start="20261231T110000"
+                            data-end="20261231T140000"
+                            data-location="SDN 39 Tanjung Saba"
+                            data-desc="Resepsi Pernikahan Sasuke &amp; Sakura">
+                            <i class="fa-regular fa-calendar-plus"></i> Simpan Kalender
+                        </button>
+                        <a class="event-btn maps-btn"
+                            href="https://www.google.com/maps?q=-1.298710177856805,100.52943556499619"
+                            target="_blank" rel="noopener">
+                            <i class="fa-solid fa-location-dot"></i> Lihat Maps
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -233,7 +257,7 @@
                 <figure><img src="assets/images/galleryA1.png" alt="Galeri 1" loading="lazy"></figure>
                 <figure><img src="assets/images/galleryA2.png" alt="Galeri 2" loading="lazy"></figure>
                 <figure><img src="assets/images/galleryA3.png" alt="Galeri 3" loading="lazy"></figure>
-                <figure><img src="assets/images/coverA.png" alt="Galeri 4" loading="lazy"></figure>
+                <figure><img src="assets/images/galleryA4.png" alt="Galeri 4" loading="lazy"></figure>
             </div>
         </section>
 
@@ -322,6 +346,8 @@
     <script src="js/music.js"></script>
     <script src="js/countdown.js"></script>
     <script src="js/petals.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/lightbox.js"></script>
     <script src="js/script.js"></script>
     <script src="js/rsvp.js"></script>
 </body>

@@ -35,69 +35,72 @@ document.getElementById('btn-open-invitation').addEventListener('click', functio
 
     // Auto-scroll halus dari Beranda melewati semua section, berhenti di Gift
     setTimeout(() => {
-        const giftSection = document.getElementById('gift');
-        if (giftSection) {
-            const AUTO_SCROLL_DURATION = 90000; // ms — ubah angka ini untuk atur kecepatan (makin besar makin lambat)
-            const targetY = giftSection.getBoundingClientRect().top + window.scrollY;
-            smoothScrollTo(targetY, AUTO_SCROLL_DURATION);
-        }
+        if (autoScrollEnabled) startAutoScroll(AUTO_SCROLL_DURATION);
     }, 300);
 }, { once: true });
 
-// ================= Smooth Scroll dengan Durasi Bisa Diatur =================
-let cancelActiveAutoScroll = null;
+// ================= Auto Scroll (bisa dinyalakan/dimatikan lewat tombol) =================
+// - Saat tombol aktif (ikon panah bawah): auto-scroll berjalan dari Beranda menuju Gift.
+// - User tetap bisa scroll manual kapan saja; auto-scroll akan berhenti sejenak
+//   lalu melanjutkan sendiri dari posisi terakhir setelah user berhenti berinteraksi.
+// - Saat tombol dimatikan (ikon pause): auto-scroll berhenti total dan tidak akan
+//   melanjutkan sendiri sampai tombol dinyalakan kembali.
+const AUTO_SCROLL_DURATION = 90000; // ms — ubah angka ini untuk atur kecepatan (makin besar makin lambat)
+const AUTO_SCROLL_RESUME_DELAY = 1200; // ms jeda tanpa interaksi sebelum auto-scroll melanjutkan lagi
 
-function smoothScrollTo(targetY, duration) {
-    // Batalkan dulu animasi auto-scroll sebelumnya kalau masih berjalan,
-    // supaya tidak ada dua animasi berebut posisi scroll (penyebab efek "bergetar")
-    if (cancelActiveAutoScroll) {
-        cancelActiveAutoScroll();
+let autoScrollEnabled = true;
+let autoScrollRAF = null;
+let autoScrollResumeTimer = null;
+let autoScrollRemainingMs = AUTO_SCROLL_DURATION;
+
+function getAutoScrollTargetY() {
+    const giftSection = document.getElementById('gift');
+    if (!giftSection) return null;
+    return giftSection.getBoundingClientRect().top + window.scrollY;
+}
+
+function setAutoScrollingClass(isActive) {
+    const bottomBar = document.getElementById('bottomBar');
+    if (bottomBar) bottomBar.classList.toggle('auto-scrolling', isActive);
+}
+
+function setAutoScrollIcon(isActive) {
+    const btn = document.getElementById('autoScrollToggle');
+    if (!btn) return;
+    const icon = btn.querySelector('i');
+    if (!icon) return;
+
+    if (isActive) {
+        icon.classList.remove('fa-pause');
+        icon.classList.add('fa-arrow-down');
+        btn.classList.remove('off');
+    } else {
+        icon.classList.remove('fa-arrow-down');
+        icon.classList.add('fa-pause');
+        btn.classList.add('off');
     }
+}
 
+function stopAutoScrollAnimation() {
+    if (autoScrollRAF) {
+        cancelAnimationFrame(autoScrollRAF);
+        autoScrollRAF = null;
+    }
+    setAutoScrollingClass(false);
+}
+
+function easeInOutQuad(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+function runAutoScrollStep(targetY, durationMs) {
     const startY = window.scrollY;
     const distance = targetY - startY;
     const startTime = performance.now();
-    let cancelled = false;
-
-    function cancelAutoScroll() {
-        cancelled = true;
-        removeCancelListeners();
-        setAutoScrollingClass(false);
-        if (cancelActiveAutoScroll === cancelAutoScroll) {
-            cancelActiveAutoScroll = null;
-        }
-    }
-
-    cancelActiveAutoScroll = cancelAutoScroll;
-
-    function setAutoScrollingClass(isActive) {
-        const bottomBar = document.getElementById('bottomBar');
-        if (bottomBar) bottomBar.classList.toggle('auto-scrolling', isActive);
-    }
-
-    function addCancelListeners() {
-        window.addEventListener('wheel', cancelAutoScroll, { passive: true });
-        window.addEventListener('touchstart', cancelAutoScroll, { passive: true });
-        window.addEventListener('pointerdown', cancelAutoScroll, { passive: true });
-        window.addEventListener('keydown', cancelAutoScroll);
-    }
-
-    function removeCancelListeners() {
-        window.removeEventListener('wheel', cancelAutoScroll);
-        window.removeEventListener('touchstart', cancelAutoScroll);
-        window.removeEventListener('pointerdown', cancelAutoScroll);
-        window.removeEventListener('keydown', cancelAutoScroll);
-    }
-
-    function easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
 
     function step(currentTime) {
-        if (cancelled) return;
-
         const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
+        const progress = Math.min(elapsed / durationMs, 1);
 
         // behavior: 'auto' WAJIB di sini, supaya tidak bentrok
         // dengan CSS "scroll-behavior: smooth" pada html
@@ -107,21 +110,79 @@ function smoothScrollTo(targetY, duration) {
             behavior: 'auto'
         });
 
+        autoScrollRemainingMs = durationMs - elapsed;
+
         if (progress < 1) {
-            requestAnimationFrame(step);
+            autoScrollRAF = requestAnimationFrame(step);
         } else {
-            removeCancelListeners();
+            autoScrollRAF = null;
             setAutoScrollingClass(false);
-            if (cancelActiveAutoScroll === cancelAutoScroll) {
-                cancelActiveAutoScroll = null;
-            }
         }
     }
 
     setAutoScrollingClass(true);
-    addCancelListeners();
-    requestAnimationFrame(step);
+    autoScrollRAF = requestAnimationFrame(step);
 }
+
+function startAutoScroll(durationMs) {
+    const targetY = getAutoScrollTargetY();
+    if (targetY === null) return;
+    stopAutoScrollAnimation();
+    autoScrollRemainingMs = durationMs;
+    runAutoScrollStep(targetY, durationMs);
+}
+
+function pauseAutoScrollForInteraction() {
+    // Interaksi manual hanya menjeda sementara selama tombol dalam keadaan aktif;
+    // kalau tombol sedang dimatikan, tidak ada yang perlu dijeda/dilanjutkan.
+    if (!autoScrollEnabled) return;
+
+    stopAutoScrollAnimation();
+
+    if (autoScrollResumeTimer) clearTimeout(autoScrollResumeTimer);
+    autoScrollResumeTimer = setTimeout(() => {
+        if (!autoScrollEnabled) return;
+
+        const targetY = getAutoScrollTargetY();
+        if (targetY === null) return;
+
+        // Kalau posisi sudah sangat dekat dengan target, tidak perlu lanjut lagi
+        if (Math.abs(window.scrollY - targetY) < 4) return;
+
+        const remaining = Math.max(autoScrollRemainingMs, 1500);
+        runAutoScrollStep(targetY, remaining);
+    }, AUTO_SCROLL_RESUME_DELAY);
+}
+
+function initAutoScrollInteractionListeners() {
+    window.addEventListener('wheel', pauseAutoScrollForInteraction, { passive: true });
+    window.addEventListener('touchstart', pauseAutoScrollForInteraction, { passive: true });
+    window.addEventListener('pointerdown', pauseAutoScrollForInteraction, { passive: true });
+    window.addEventListener('keydown', pauseAutoScrollForInteraction);
+}
+initAutoScrollInteractionListeners();
+
+function toggleAutoScroll() {
+    autoScrollEnabled = !autoScrollEnabled;
+    setAutoScrollIcon(autoScrollEnabled);
+
+    if (autoScrollResumeTimer) {
+        clearTimeout(autoScrollResumeTimer);
+        autoScrollResumeTimer = null;
+    }
+
+    if (autoScrollEnabled) {
+        startAutoScroll(AUTO_SCROLL_DURATION);
+    } else {
+        stopAutoScrollAnimation();
+    }
+}
+
+const autoScrollToggleBtn = document.getElementById('autoScrollToggle');
+if (autoScrollToggleBtn) {
+    autoScrollToggleBtn.addEventListener('click', toggleAutoScroll);
+}
+
 function showToast(message) {
     let toast = document.querySelector('.toast');
     if (!toast) {
@@ -166,87 +227,10 @@ function copyToClipboard(elementId) {
     }
 }
 
-// ================= Lightbox Galeri (dengan navigasi geser) =================
-function initLightbox() {
-    const images = Array.from(document.querySelectorAll('.gallery-grid img'));
-    if (!images.length) return;
-
-    let currentIndex = 0;
-
-    const lightbox = document.createElement('div');
-    lightbox.className = 'lightbox';
-    lightbox.innerHTML = `
-        <button class="lightbox-close" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-        <button class="lightbox-nav lightbox-prev" aria-label="Foto sebelumnya"><i class="fa-solid fa-chevron-left"></i></button>
-        <img src="" alt="">
-        <button class="lightbox-nav lightbox-next" aria-label="Foto selanjutnya"><i class="fa-solid fa-chevron-right"></i></button>
-        <div class="lightbox-counter"></div>
-    `;
-    document.body.appendChild(lightbox);
-
-    const lightboxImg = lightbox.querySelector('img');
-    const closeBtn = lightbox.querySelector('.lightbox-close');
-    const prevBtn = lightbox.querySelector('.lightbox-prev');
-    const nextBtn = lightbox.querySelector('.lightbox-next');
-    const counter = lightbox.querySelector('.lightbox-counter');
-
-    if (images.length <= 1) {
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
-    }
-
-    function showImage(index) {
-        currentIndex = (index + images.length) % images.length;
-        lightboxImg.src = images[currentIndex].src;
-        lightboxImg.alt = images[currentIndex].alt;
-        counter.textContent = `${currentIndex + 1} / ${images.length}`;
-    }
-
-    images.forEach((img, i) => {
-        img.addEventListener('click', () => {
-            showImage(i);
-            lightbox.classList.add('show');
-        });
-    });
-
-    function closeLightbox() {
-        lightbox.classList.remove('show');
-    }
-
-    closeBtn.addEventListener('click', closeLightbox);
-    prevBtn.addEventListener('click', () => showImage(currentIndex - 1));
-    nextBtn.addEventListener('click', () => showImage(currentIndex + 1));
-
-    lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox) closeLightbox();
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (!lightbox.classList.contains('show')) return;
-        if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowLeft') showImage(currentIndex - 1);
-        if (e.key === 'ArrowRight') showImage(currentIndex + 1);
-    });
-
-    // Geser (swipe) untuk layar sentuh
-    let touchStartX = 0;
-    lightbox.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    lightbox.addEventListener('touchend', (e) => {
-        const diff = e.changedTouches[0].screenX - touchStartX;
-        if (Math.abs(diff) > 40) {
-            diff < 0 ? showImage(currentIndex + 1) : showImage(currentIndex - 1);
-        }
-    }, { passive: true });
-}
-initLightbox();
-
 // ================= Scroll Reveal =================
 function initScrollReveal() {
     const revealEls = document.querySelectorAll(
-        '.section, .event-card, .bank-card, .card, .story-item, .hero-photo, .countdown-container, .location-card, .gallery-grid figure'
+        '.section, .event-card, .bank-card, .card, .hero-photo, .countdown-container, .location-card, .gallery-grid figure'
     );
     revealEls.forEach(el => el.classList.add('reveal'));
 
